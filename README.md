@@ -1,4 +1,4 @@
-![alt text](banner\banner.png)
+![alt text](./banner\banner.png)
 
 # **Welcome to my Front-End Repository!**
 

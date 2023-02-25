@@ -1,9 +1,9 @@
-import SliderTrack from "./components/SliderTrack";
+import MotionSlider from "./components/MotionSlider/MotionSlider";
 
 function App() {
   return (
     <div className="App">
-      <SliderTrack />
+      <MotionSlider />
     </div>
   );
 }

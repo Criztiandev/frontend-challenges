@@ -19,21 +19,3 @@ body {
   width: 100vw;
   border: 1px solid black;
 }
-
-.track {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(0, -50%);
-  display: flex;
-  gap: 4vmin;
-
-  user-select: none;
-}
-
-img {
-  width: 40vmin;
-  height: 56vmin;
-  object-fit: cover;
-  object-position: center;
-}

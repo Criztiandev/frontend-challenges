@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
+import "./style.css";
 
-const SliderTract = () => {
+const MotionSlider = () => {
   const [trackPosition, setTrackPosition] = useState(0);
   const [currentPercentage, setCurrentPercentage] = useState(0);
   const [prevPosition, setPrevPosition] = useState(0);
@@ -92,4 +93,4 @@ const SliderTract = () => {
   );
 };
 
-export default SliderTract;
+export default MotionSlider;

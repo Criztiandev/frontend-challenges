@@ -3,8 +3,6 @@ import "./style.css";
 
 const MotionSlider = () => {
   const [trackPosition, setTrackPosition] = useState(0);
-  const [currentPercentage, setCurrentPercentage] = useState(0);
-  const [prevPosition, setPrevPosition] = useState(0);
   const trackRef = useRef(null);
 
   useEffect(() => {
@@ -22,20 +20,15 @@ const MotionSlider = () => {
 
       // calculate the percentage of the track that has been moved
       const percentage = (mouseDelta / maxDelta) * 100;
-      const nextPercentageUnconstrained = prevPosition + percentage;
-      const nextPercentage = Math.max(
-        Math.min(nextPercentageUnconstrained, 0),
-        -100
-      );
 
-      setCurrentPercentage(nextPercentage);
+      //! Problem: the track is getting reset after 2nd time drag
+      //* Solution: create a variable that will store the new position of the track and clamp it between 0 to -100
 
-      track.style.transform = `translate(${nextPercentage}%, -50%)`;
+      track.style.transform = `translate(${percentage}%, -50%)`;
     };
 
     track.addEventListener("mouseup", (e: MouseEvent) => {
       setTrackPosition(0);
-      setPrevPosition(currentPercentage);
     });
 
     track.addEventListener("mousedown", handleMouseDown);

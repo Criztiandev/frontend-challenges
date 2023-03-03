@@ -1,88 +1,149 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import "./style.css";
 
+const imagesDataset = [
+  {
+    id: 0,
+    src: "https://images.unsplash.com/photo-1530122037265-a5f1f91d3b99?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=870&q=80",
+    alt: "img",
+  },
+  {
+    id: 1,
+    src: "https://images.unsplash.com/photo-1531219572328-a0171b4448a3?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=870&q=80",
+    alt: "img",
+  },
+  {
+    id: 2,
+    src: "https://images.unsplash.com/photo-1525762867061-21c9fb70b15a?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=870&q=80",
+    alt: "img",
+  },
+  {
+    id: 3,
+    src: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=871&q=80",
+    alt: "img",
+  },
+  {
+    id: 4,
+    src: "https://images.unsplash.com/photo-1568605114967-8130f3a36994?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=870&q=80",
+    alt: "img",
+  },
+];
+
 const MotionSlider = () => {
-  const [trackPosition, setTrackPosition] = useState(0);
-  const trackRef = useRef(null);
+  // Set up state variables to keep track of dragging status, track position,
+  // previous track position, and next percentage constrained.
+  const [isDragging, setIsDragging] = useState(false);
+  const [trackPosition, setTrackPosition] = useState<number>(0);
+  const [previousTrackPosition, setPreviousTrackPosition] = useState<number>(0);
+  const [nextPercentageConstrained, setNextPercentageConstrained] =
+    useState<number>(0);
 
-  useEffect(() => {
-    const track = trackRef.current as HTMLDivElement | null;
-    if (!track) return;
+  // Use a ref to get a reference to the track element in the DOM.
+  const trackRef = useRef<HTMLDivElement>(null);
 
-    const handleMouseDown = (e: MouseEvent) => {
-      setTrackPosition(e.clientX);
-    };
+  // Define callback functions to handle mouse events on the track.
+  // useCallback is used to memoize the functions and prevent unnecessary re-renders.
+  const handleMouseDown = useCallback((e: MouseEvent) => {
+    const { clientX } = e;
+    setTrackPosition(clientX);
+    setIsDragging(true);
+  }, []);
 
-    const handleMouseMove = (e: MouseEvent) => {
-      if (trackPosition === 0) return;
+  const handleMouseUp = useCallback(
+    (e: MouseEvent) => {
+      setTrackPosition(0);
+      setPreviousTrackPosition(nextPercentageConstrained);
+      setIsDragging(false);
+    },
+    [nextPercentageConstrained]
+  );
+
+  const handleMouseMove = useCallback(
+    (e: MouseEvent) => {
+      if (!isDragging) {
+        return;
+      }
+
+      // if the track position has not moved, return to prevent the track from moving
+      if (trackPosition === 0) {
+        return;
+      }
+
+      // Get the width of the track and the distance the mouse has moved.
+      const trackWidth = trackRef.current?.offsetWidth ?? 1;
       const mouseDelta = e.clientX - trackPosition;
-      const maxDelta = window.innerWidth / 2;
+      const maxDelta = trackWidth / 2;
 
-      // calculate the percentage of the track that has been moved
+      // Calculate the percentage of the track that has been moved.
       const percentage = (mouseDelta / maxDelta) * 100;
 
-      //! Problem: the track is getting reset after 2nd time drag
-      //* Solution: create a variable that will store the new position of the track and clamp it between 0 to -100
+      // Add the percentage of movement to the previous track position and constrain it
+      // to be between -100 and 0.
+      const storePercentage = previousTrackPosition + percentage;
+      const nextPercentage = Math.max(Math.min(storePercentage, 0), -100);
 
-      track.style.transform = `translate(${percentage}%, -50%)`;
-    };
+      // Use requestAnimationFrame to update the track position for smooth animation.
+      requestAnimationFrame(() => {
+        setNextPercentageConstrained(nextPercentage);
+      });
+    },
+    [isDragging, previousTrackPosition, trackPosition]
+  );
 
-    track.addEventListener("mouseup", (e: MouseEvent) => {
-      setTrackPosition(0);
-    });
+  // Set up event listeners on the track and window for mouse events.
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track) {
+      return;
+    }
 
     track.addEventListener("mousedown", handleMouseDown);
     track.addEventListener("mousemove", handleMouseMove);
+    track.addEventListener("mouseup", handleMouseUp);
 
+    const handleMouseLeave = () => {
+      setIsDragging(false);
+    };
+
+    window.addEventListener("mouseup", handleMouseLeave);
+
+    // Clean up event listeners when the component unmounts.
     return () => {
       track.removeEventListener("mousedown", handleMouseDown);
       track.removeEventListener("mousemove", handleMouseMove);
+      track.removeEventListener("mouseup", handleMouseUp);
+
+      window.removeEventListener("mouseup", handleMouseLeave);
     };
-  }, [trackPosition]);
+  }, [handleMouseDown, handleMouseMove, handleMouseUp]);
+
+  // Set the track style based on the next percentage constrained, which
+  // updates when the user drags the track.
+  const trackStyle = {
+    transform: `translate(${nextPercentageConstrained}%, -50%)`,
+    transition: "transform 3s ease-out",
+  };
 
   return (
-    <div className="track" ref={trackRef}>
-      <img
-        className="image"
-        src="https://images.unsplash.com/photo-1524781289445-ddf8f5695861?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1770&q=80"
-        draggable="false"
-      />
-      <img
-        className="image"
-        src="https://images.unsplash.com/photo-1610194352361-4c81a6a8967e?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1674&q=80"
-        draggable="false"
-      />
-      <img
-        className="image"
-        src="https://images.unsplash.com/photo-1618202133208-2907bebba9e1?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1770&q=80"
-        draggable="false"
-      />
-      <img
-        className="image"
-        src="https://images.unsplash.com/photo-1495805442109-bf1cf975750b?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1770&q=80"
-        draggable="false"
-      />
-      <img
-        className="image"
-        src="https://images.unsplash.com/photo-1548021682-1720ed403a5b?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1770&q=80"
-        draggable="false"
-      />
-      <img
-        className="image"
-        src="https://images.unsplash.com/photo-1496753480864-3e588e0269b3?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2134&q=80"
-        draggable="false"
-      />
-      <img
-        className="image"
-        src="https://images.unsplash.com/photo-1613346945084-35cccc812dd5?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1759&q=80"
-        draggable="false"
-      />
-      <img
-        className="image"
-        src="https://images.unsplash.com/photo-1516681100942-77d8e7f9dd97?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1770&q=80"
-        draggable="false"
-      />
-    </div>
+    <>
+      <div ref={trackRef} className="track" style={trackStyle}>
+        {imagesDataset.length > 0 &&
+          imagesDataset.map((items) => (
+            <img
+              style={{
+                objectPosition: `${nextPercentageConstrained + 100}% 50%`,
+                // buttery smooth transition
+                transition: "object-position 3s ease-out",
+              }}
+              src={items.src}
+              alt={items.alt}
+              key={items.id}
+              className="image"
+              draggable="false"
+            />
+          ))}
+      </div>
+    </>
   );
 };
 

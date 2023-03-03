@@ -13,5 +13,6 @@ img {
   width: 40vmin;
   height: 56vmin;
   object-fit: cover;
-  object-position: center;
+  object-position: 0% 50%;
+  border-radius: 5px;
 }
